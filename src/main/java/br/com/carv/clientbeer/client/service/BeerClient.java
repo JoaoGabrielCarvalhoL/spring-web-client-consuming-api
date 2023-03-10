@@ -16,11 +16,11 @@ public interface BeerClient {
     Mono<BeerPagedListResponse> listBears(Integer pageNumber, Integer pageSize, String beerName,
                                           String beerStyle, Boolean showInventoryOnHand);
 
-    Mono<ResponseEntity> createBeer(BeerPostRequest beerPostRequest);
+    Mono<ResponseEntity<Void>> createBeer(BeerPostRequest beerPostRequest);
 
-    Mono<ResponseEntity> updateBeer(BeerPutRequest beerPutRequest);
+    Mono<ResponseEntity<Void>> updateBeer(UUID id, BeerPutRequest beerPutRequest);
 
-    Mono<ResponseEntity> deleteBeerById(UUID id);
+    Mono<ResponseEntity<Void>> deleteBeerById(UUID id);
 
     Mono<BeerGenericResponse> getBeerByUPC(String upc);
 }

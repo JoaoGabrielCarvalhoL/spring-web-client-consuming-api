@@ -8,6 +8,7 @@ import br.com.carv.clientbeer.client.service.BeerClient;
 import br.com.carv.clientbeer.config.WebClientProperties;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -29,8 +30,9 @@ public class BeerClientImplementation implements BeerClient {
     @Override
     public Mono<BeerGenericResponse> getBeerById(UUID id, Boolean showInventoryOnHand) {
         return webClient.get()
-                .uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_PATH + "/" + id.toString())
-                        .queryParamIfPresent("showInventoryOnHand", Optional.ofNullable(showInventoryOnHand)).build())
+                .uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_PATH_GET_BY_ID)
+                        .queryParamIfPresent("showInventoryOnHand", Optional.ofNullable(showInventoryOnHand))
+                        .build(id))
                 .retrieve()
                 .bodyToMono(BeerGenericResponse.class);
     }
@@ -50,24 +52,37 @@ public class BeerClientImplementation implements BeerClient {
     }
 
     @Override
-    public Mono<ResponseEntity> createBeer(BeerPostRequest beerPostRequest) {
-        return null;
+    public Mono<ResponseEntity<Void>> createBeer(BeerPostRequest beerPostRequest) {
+        return this.webClient.post()
+                .uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_PATH).build())
+                .body(BodyInserters.fromValue(beerPostRequest))
+                .retrieve()
+                .toBodilessEntity();
+
     }
 
     @Override
-    public Mono<ResponseEntity> updateBeer(BeerPutRequest beerPutRequest) {
-        return null;
+    public Mono<ResponseEntity<Void>> updateBeer(UUID id, BeerPutRequest beerPutRequest) {
+        return this.webClient.put()
+                .uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_PATH_PUT).build(id))
+                .body(BodyInserters.fromValue(beerPutRequest))
+                .retrieve()
+                .toBodilessEntity();
     }
 
+
     @Override
-    public Mono<ResponseEntity> deleteBeerById(UUID id) {
-        return null;
+    public Mono<ResponseEntity<Void>> deleteBeerById(UUID id) {
+        return this.webClient.delete()
+                .uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_PATH_DELETE).build(id))
+                .retrieve()
+                .toBodilessEntity();
     }
 
     @Override
     public Mono<BeerGenericResponse> getBeerByUPC(String upc) {
-        return webClient.get().uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_UPC_PATH + "/" + upc)
-                .build())
+        return webClient.get().uri(uriBuilder -> uriBuilder.path(WebClientProperties.BEER_V1_UPC_PATH)
+                .build(upc))
                 .retrieve()
                 .bodyToMono(BeerGenericResponse.class);
 

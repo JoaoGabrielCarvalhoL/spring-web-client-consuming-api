@@ -31,6 +31,13 @@ public class BeerPostRequest {
         this.quantityOnHand = quantityOnHand;
     }
 
+    public BeerPostRequest(String beerName, String beerStyle, String upc, BigDecimal price) {
+        this.beerName = beerName;
+        this.beerStyle = beerStyle;
+        this.upc = upc;
+        this.price = price;
+    }
+
     public String getBeerName() {
         return beerName;
     }

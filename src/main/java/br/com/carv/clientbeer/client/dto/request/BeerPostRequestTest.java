@@ -4,10 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
-public class BeerPutRequest {
-
+public class BeerPostRequestTest {
 
     @NotBlank(message = "The name cannot be empty")
     @Size(max = 100, min = 5, message = "Maximum number of characters for this field is 100.")
@@ -17,15 +15,15 @@ public class BeerPutRequest {
 
     private String upc;
 
-    private BigDecimal price;
+    private String price;
 
     private Integer quantityOnHand;
 
-    public BeerPutRequest() {
+    public BeerPostRequestTest() {
 
    }
 
-    public BeerPutRequest(String beerName, String beerStyle, String upc, BigDecimal price, Integer quantityOnHand) {
+    public BeerPostRequestTest(String beerName, String beerStyle, String upc, String price, Integer quantityOnHand) {
         this.beerName = beerName;
         this.beerStyle = beerStyle;
         this.upc = upc;
@@ -33,7 +31,7 @@ public class BeerPutRequest {
         this.quantityOnHand = quantityOnHand;
     }
 
-    public BeerPutRequest(String beerName, String beerStyle, String upc, BigDecimal price) {
+    public BeerPostRequestTest(String beerName, String beerStyle, String upc, String price) {
         this.beerName = beerName;
         this.beerStyle = beerStyle;
         this.upc = upc;
@@ -64,11 +62,11 @@ public class BeerPutRequest {
         this.upc = upc;
     }
 
-    public BigDecimal getPrice() {
+    public String getPrice() {
         return price;
     }
 
-    public void setPrice(BigDecimal price) {
+    public void setPrice(String price) {
         this.price = price;
     }
 

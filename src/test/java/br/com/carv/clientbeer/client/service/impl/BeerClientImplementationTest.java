@@ -1,5 +1,7 @@
 package br.com.carv.clientbeer.client.service.impl;
 
+import br.com.carv.clientbeer.client.dto.request.BeerPostRequest;
+import br.com.carv.clientbeer.client.dto.request.BeerPutRequest;
 import br.com.carv.clientbeer.client.dto.response.BeerGenericResponse;
 import br.com.carv.clientbeer.client.dto.response.BeerPagedListResponse;
 import br.com.carv.clientbeer.client.exception.ResourceNotFoundFromClientException;
@@ -8,9 +10,17 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 class BeerClientImplementationTest {
@@ -45,6 +55,28 @@ class BeerClientImplementationTest {
         Assertions.assertThat(id).getClass().equals(UUID.class);
         logger.info("Value ID: " + id);
         logger.info(block.toString());
+    }
+
+    @Test
+    void functionalGetBeerById() throws InterruptedException {
+        AtomicReference<String> beerName = new AtomicReference<>();
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        beerClient.listBears(null, null, null, null,
+                        null)
+                .map(beerPagedList -> beerPagedList.getContent().get(0).getId())
+                .map(beerId -> beerClient.getBeerById(beerId, false))
+                .flatMap(mono -> mono)
+                .subscribe(beerDto -> {
+                    System.out.println(beerDto.getBeerName());
+                    beerName.set(beerDto.getBeerName());
+                    Assertions.assertThat(beerDto.getBeerName()).isEqualTo("Mango Bobs");
+                    countDownLatch.countDown();
+                });
+
+        countDownLatch.await();
+
+        Assertions.assertThat(beerName.get()).isEqualTo("Mango Bobs");
     }
 
     @Disabled("Problem With API")
@@ -101,14 +133,81 @@ class BeerClientImplementationTest {
 
     @Test
     void createBeer() {
+
+        BeerPostRequest beerPostRequest = new BeerPostRequest("Dogfishhead 90 Min IPA",
+                "IPA", "234848549999", new BigDecimal("10.99"));
+
+        Mono<ResponseEntity<Void>> responseEntityMono = this.beerClient.createBeer(beerPostRequest);
+
+        ResponseEntity responseEntity = responseEntityMono.block();
+        HttpStatusCode statusCode = responseEntity.getStatusCode();
+        Assertions.assertThat(statusCode).isEqualTo(HttpStatus.CREATED);
     }
 
     @Test
     void updateBeer() {
+
+        Mono<BeerPagedListResponse> beerPagedListResponseMono =
+                this.beerClient.listBears(null, null, null, null, null);
+
+        BeerPagedListResponse pagedListResponse = beerPagedListResponseMono.block();
+
+        UUID id = pagedListResponse.getContent().get(0).getId();
+
+        BeerPutRequest beerPutRequest = new BeerPutRequest("Dogfishhead 90 Min IPA Updated",
+                "IPA", "234848549999", new BigDecimal("10.99"));
+
+
+        Mono<ResponseEntity<Void>> responseEntityMono = this.beerClient.updateBeer(id, beerPutRequest);
+        ResponseEntity<Void> responseEntity = responseEntityMono.block();
+
+        Assertions.assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+
     }
 
     @Test
     void deleteBeerById() {
+
+        Mono<BeerPagedListResponse> beerPagedListResponseMono =
+                this.beerClient.listBears(null, null, null, null, null);
+
+        BeerPagedListResponse pagedListResponse = beerPagedListResponseMono.block();
+
+        UUID id = pagedListResponse.getContent().get(0).getId();
+
+        Mono<ResponseEntity<Void>> responseEntityMono = this.beerClient.deleteBeerById(id);
+        ResponseEntity<Void> responseEntity = responseEntityMono.block();
+
+        Assertions.assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void deleteBeerByIdNotFound() {
+
+        Mono<ResponseEntity<Void>> responseEntityMono = this.beerClient.deleteBeerById(UUID.randomUUID());
+
+        org.junit.jupiter.api.Assertions.assertThrows(WebClientResponseException.class, () -> {
+            ResponseEntity<Void> responseEntity = responseEntityMono.block();
+            Assertions.assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        });
+    }
+
+    @Test
+    void deleteBeerByIdNotFoundHandleException() {
+
+        Mono<ResponseEntity<Void>> responseEntityMono = this.beerClient.deleteBeerById(UUID.randomUUID());
+
+        ResponseEntity<Void> responseEntity = responseEntityMono.onErrorResume(throwable -> {
+            if (throwable instanceof WebClientResponseException) {
+                WebClientResponseException exception = (WebClientResponseException) throwable;
+                return Mono.just(ResponseEntity.status(exception.getStatusCode()).build());
+            } else {
+                throw new RuntimeException(throwable);
+            }
+        }).block();
+
+        Assertions.assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
